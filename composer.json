@@ -1,0 +1,23 @@
+{
+    "name": "uxmz/ga",
+    "version": "0.0.1",
+    "minimum-stability": "dev",
+    "description": "PHP client for Google Analytics Measurement Protocol",
+    "keywords": ["analytics", "tracking", "measurement", "ga"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "UX Tech Team",
+            "email": "tech@ux.co.mz",
+            "homepage": "https://www.ux.co.mz"
+        }
+    ],
+    "require": {
+        "psr/log": "^1.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "Uxmz\\Ga\\": ""
+        }
+    }
+}
