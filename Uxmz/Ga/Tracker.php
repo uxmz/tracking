@@ -1,7 +1,7 @@
 <?php
-namespace Uxmz\Ga;
+// namespace Uxmz\Ga;
 
-use Psr\Log\LoggerInterface;
+// use Psr\Log\LoggerInterface;
 
 /**
  * Google Analytics Measurement Protocol Tracker Implementation.
@@ -371,9 +371,9 @@ class Tracker {
         }
     }
 
-    protected function _log_error()
+    protected function _log_error($message)
     {
-        if ($this->_logger) {
+        if (isset($this->_logger)) {
             $this->_logger->error($message);
         } else {
             error_log($message);
@@ -383,7 +383,7 @@ class Tracker {
     // Public API
     // ---
 
-    public function __construct($options = array(), LoggerInterface $logger = null)
+    public function __construct($options = array(), /*LoggerInterface*/ $logger = null)
     {
         if (!is_callable('curl_init'))
             throw new Exception("Tracker class requires cURL to be enabled!");
