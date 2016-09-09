@@ -111,6 +111,11 @@ class Tracker {
     const TRACKING_LOG = "Tracking Log: ";
 
     /**
+     * Tracker ID Regex
+     */
+    const TRACKER_ID_REGEXP = "/^(UA)-\d{4,10}-\d{1,4}$/";
+
+    /**
      * The logger instance.
      * @var LoggerInterface
      */
@@ -349,14 +354,13 @@ class Tracker {
         if (!is_array($options))
             return false;
 
-        // Make sure tid is valid with regex
-        if (array_key_exists("appTrackingId", $options)) {
-            if (!preg_match("/^(UA)-\d{4,10}-\d{1,4}$/", $options["appTrackingId"]))
+        if (array_key_exists("webTrackingId", $options)) {
+            if (!preg_match(self::TRACKER_ID_REGEXP, $options["webTrackingId"]))
                 return false;
         }
 
-        if (array_key_exists("webTrackingId", $options)) {
-            if (!preg_match("/^(UA)-\d{4,10}-\d{1,4}$/", $options["webTrackingId"]))
+        if (array_key_exists("appTrackingId", $options)) {
+            if (!preg_match(self::TRACKER_ID_REGEXP, $options["appTrackingId"]))
                 return false;
         }
 
