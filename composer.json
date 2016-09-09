@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "minimum-stability": "dev",
     "description": "PHP client for Google Analytics Measurement Protocol",
-    "keywords": ["analytics", "tracking", "measurement", "ga"],
+    "keywords": ["analytics", "tracking", "measurement protocol", "ga"],
     "license": "MIT",
     "authors": [
         {
@@ -13,11 +13,22 @@
         }
     ],
     "require": {
+        "php": ">=5.6.0",
         "psr/log": "^1.0"
     },
+    "require-dev": {
+        "phpdocumentor/phpdocumentor": "*",
+        "evert/phpdoc-md" : "~0.2.0",
+		"phpunit/phpunit": "4.7.*"
+    },
     "autoload": {
-        "psr-0": {
-            "Uxmz\\Ga\\": ""
+        "psr-4": {
+            "Uxmz\\Ga\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Uxmz\\Ga\\Tests\\": "tests/"
         }
     }
 }

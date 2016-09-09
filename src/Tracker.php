@@ -1,7 +1,15 @@
 <?php
-// namespace Uxmz\Ga;
+/**
+ * Tracker
+ * @license   https://www.tldrlegal.com/l/mit MIT
+ * @link      https://wg
+ * @package Tracker
+ */
 
-// use Psr\Log\LoggerInterface;
+namespace Uxmz\Ga;
+
+use Psr\Log\LoggerInterface;
+use \Exception, \InvalidArgumentException;
 
 /**
  * Google Analytics Measurement Protocol Tracker Implementation.
@@ -14,13 +22,13 @@ class Tracker {
 
     /**
      * Indicates if this tracker is initialized.
-     * @type {Boolean}
+     * @var boolean
      */
     protected $_initialized = false;
 
     /**
      * Class default options.
-     * @type {Array}
+     * @var array
      */
     protected $_defaults = array(
         "applicationName" => "My-Awesome-App-Name", // Nice name for app reporting in Insights.
@@ -54,21 +62,23 @@ class Tracker {
         // Hits sent with debug will not show up in reports. They are for debugging only.
         "debug" => false,
         "log" => false,  // If true, data is logged before sending
+
+        "proxies" => array(), // list of proxies to be checked for clients IP address
     );
 
     /**
      * Class options after initialization.
-     * @type {Array}
+     * @var array
      */
     protected $_options = array();
 
     /**
      * The events queue.
      *
-     * To optmize usage, the telemetry clients batches the events to send in this
+     * To optimize usage, the telemetry clients batches the events to send in this
      * Queue and then sends the data in fixed time intervals or whenever
      * the `maxBatchSize` limit is reached.
-     * @type {Array}
+     * @var array
      */
     protected $_eventsQueue = array();
 
@@ -84,7 +94,16 @@ class Tracker {
     const TIMING = "timing";
 
     // Enabled / Valid event/hit types
-    public $EVENT_TYPES = array(self::EVENT, self::EXCEPTION, self::PAGE_VIEW, self::SCREEN_VIEW, self::TRANSACTION, self::ITEM, self::SOCIAL, self::TIMING);
+    const EVENT_TYPES = array(
+        self::EVENT,
+        self::EXCEPTION,
+        self::PAGE_VIEW,
+        self::SCREEN_VIEW,
+        self::TRANSACTION,
+        self::ITEM,
+        self::SOCIAL,
+        self::TIMING
+    );
 
     /**
      * Log message prefix.
@@ -93,13 +112,14 @@ class Tracker {
 
     /**
      * The logger instance.
-     * @var Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $_logger;
 
     /**
      * Checks if we can track or not.
-     * @return {Boolean}
+     * @internal
+     * @return boolean
      */
     protected function _canTrack()
     {
@@ -108,12 +128,13 @@ class Tracker {
 
     /**
      * Stores events we want to track in queue.
-     * @param  {String} eventType the type of thing we want to test
-     * @param  {string} name    the name of the event
-     * @param  {string} data    the data of the event
-     * @param  {Array} props   Array of key-value (string/string) pair of properties related to the event
-     * @param  {Array} metrics Array of key-value (string/double) pair of metrics related to the event
-     * @return {void}
+     * @internal
+     * @param string $eventType the type of thing we want to test
+     * @param string $name the name of the event name
+     * @param array $data the data of the event
+     * @param array $props Array of key-value (string/string) pair of properties related to the event
+     * @param array $metrics Array of key-value (string/double) pair of metrics related to the event
+     * @return void
      */
     protected function _track($eventType, $name, $data = array(), $props = array(), $metrics = array())
     {
@@ -122,6 +143,9 @@ class Tracker {
 
         if ( !$this->_canTrack() )
             return $this->_log_error(sprintf("%s %s is not enabled", self::TRACKING_LOG, __FUNCTION__));
+
+        if ( !in_array($eventType, self::EVENT_TYPES) )
+            return $this->_log_error(sprintf("%s %s %s is not a valid event type", self::TRACKING_LOG, __FUNCTION__));
 
         if ( !$this->_validateProps($props) )
             return $this->_log_error(sprintf("%s %s given properties are invalid", self::TRACKING_LOG, __FUNCTION__));
@@ -159,8 +183,9 @@ class Tracker {
 
         // Proxy-Overrides
         // ---
-        if (preg_match('/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/', $this->_get_client_ip(true))) {
-            $data["uip"] = $this->_get_client_ip(true);
+        $ip = $this->_get_client_ip(true);
+        if ($this->_is_valid_ip($ip)) {
+            $data["uip"] = $ip;
         }
 
         if (array_key_exists("HTTP_USER_AGENT", $_SERVER)) {
@@ -168,11 +193,13 @@ class Tracker {
         }
 
         $data["geoid"] = $this->_options["geoid"]; // Maybe get from IP
-        // $data["ul"] = visitor_language(); // TODO: Make user override this so he gets the language chosen by the user.
+
+        /** @todo: Allow overriding this so it gets the language chosen by the user. */
+         $data["ul"] = 'pt';
 
         // If there's a UID set in _ga cookie take it otherwise user internal if available
-        if ($this->_getGAUID()) {
-            $data["uid"] = $this->_getGAUID();
+        if ($this->_get_GA_UID()) {
+            $data["uid"] = $this->_get_GA_UID();
         }
 
         // Queue and flush
@@ -193,9 +220,9 @@ class Tracker {
 
     /**
      * Immediately send all queued telemetry data.
-     * Should be asynchronous.
-     *
-     * @return {void}
+     * @todo make it asynchronous.
+     * @internal
+     * @return void
      */
     protected function _flush()
     {
@@ -205,7 +232,6 @@ class Tracker {
             return;
 
         $url = ($this->_options["ssl"] === true ? "https://" : "http://") . $this->_options["host"] . ($this->_options["debug"] === true ? "/debug" : "");
-        $headers = array();
         $body = array("v" => $this->_options["apiVersion"]);
         $post = array();
 
@@ -273,6 +299,12 @@ class Tracker {
     // Helpers
     // ---
 
+    /**
+     * Validates given properties.
+     * @internal
+     * @param array $props properties to be validated
+     * @return bool
+     */
     protected function _validateProps($props)
     {
         if ( !is_array($props) )
@@ -286,6 +318,13 @@ class Tracker {
         return true;
     }
 
+
+    /**
+     * Validates the given metrics.
+     * @internal
+     * @param array $metrics metrics to be validated
+     * @return bool
+     */
     protected function _validateMetrics($metrics)
     {
         if ( !is_array($metrics) )
@@ -299,6 +338,12 @@ class Tracker {
         return true;
     }
 
+    /**
+     * Validates initialization options for the tracker.
+     * @internal
+     * @param array $options list of options
+     * @return bool
+     */
     protected function _validateOptions($options)
     {
         if (!is_array($options))
@@ -323,25 +368,46 @@ class Tracker {
      *
      * When sending hits to google the cid param must be in GUID/UUID format
      * as per RFC4122 (http://www.ietf.org/rfc/rfc4122.txt)
-     *
-     * @param  string  $guid [description]
-     * @return boolean       [description]
+     * @internal
+     * @param  string  $guid
+     * @return boolean
      */
     protected function _is_guid($guid)
     {
-        return !empty($guid) && preg_match('/^\{?[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}\}?$/i', $guid);
+        if (empty($guid))
+            return false;
+
+        if (function_exists("is_guid"))
+            return is_guid($guid);
+
+        return preg_match('/^\{?[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}\}?$/i', $guid);
+    }
+
+    /**
+     * Check that a given string is a valid IP address.
+     * @internal
+     * @param  string  $ip
+     * @return boolean
+     */
+    protected function _is_valid_ip($ip) {
+        $flags = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
+        if (filter_var($ip, FILTER_VALIDATE_IP, $flags) === false) {
+            return false;
+        }
+        return true;
     }
 
     /**
      * Get Google Analytics UID
      * Taken from http://stackoverflow.com/questions/16102436/what-are-the-values-in-ga-cookie
+     * @internal
      * @return int
      */
-    protected function _getGAUID()
+    protected function _get_GA_UID()
     {
         $uid = 0;
         if ( isset($_COOKIE['__utma']) ) {
-            list($hash_domain, $uid, $first_visit, $prew_visit, $time_start, $num_visits) = sscanf($_COOKIE['__utma'], '%d.%d.%d.%d.%d.%d');
+            list($hash_domain, $uid, $first_visit, $previous_visit, $time_start, $num_visits) = sscanf($_COOKIE['__utma'], '%d.%d.%d.%d.%d.%d');
         } elseif ( isset($_COOKIE['_ga']) ) {
             list($c_format, $c_domain, $uid, $first_visit) = sscanf($_COOKIE['_ga'], 'GA%d.%d.%d.%d');
         }
@@ -349,19 +415,57 @@ class Tracker {
         return $uid;
     }
 
-    protected function _get_client_ip($forwarded=true)
+    /**
+     * Get' the current request's IP.
+     * @internal
+     * @param bool $check_proxies if it should also check proxies or not
+     * @param array $proxies the list of trusted proxies
+     * @return null|string the client's IP.
+     */
+    protected function _get_client_ip($check_proxies=true, $proxies = array())
     {
-        $addr = !$forwarded || empty($_SERVER['X-Forwarded-For'])
-                    ? $_SERVER['REMOTE_ADDR']
-                    : trim(preg_replace('/,.*$/', '', $_SERVER['X-Forwarded-For']));
+        $ip = null;
+        $forwarded_headers = [
+            'X-FORWARDED-FOR',
+            'X-FORWARDED',
+            'X-CLUSTER-CLIENT-IP',
+            'CLIENT-IP',
+        ];
 
+        $proxies = array_merge($proxies, $this->_options["proxies"]);
 
-        if (!preg_match('/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/', $addr))
-            $addr = gethostbyname($addr);
+        if (isset($_SERVER['REMOTE_ADDR']) && $this->_is_valid_ip($_SERVER['REMOTE_ADDR']))
+            $ip = $_SERVER['REMOTE_ADDR'];
 
-        return $addr;
+        if ($check_proxies && !empty($proxies)) {
+            if (!in_array($ip, $proxies))
+                $check_proxies = false;
+        }
+
+        if ($check_proxies) {
+            foreach ($forwarded_headers as $header) {
+                if (isset($_SERVER['HTTP_' . $header])) {
+                    $ip = trim(explode(',', $_SERVER['HTTP_' . $header])[0]);
+                    if ($this->_is_valid_ip($ip)) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!$this->_is_valid_ip($ip)) {
+            $ip = gethostbyname($ip);
+        }
+
+        return $ip;
     }
 
+    /**
+     * Logs and info message.
+     * @internal
+     * @param string $message the message to be logged
+     * @return void
+     */
     protected function _log_info($message)
     {
         if ($this->_logger) {
@@ -371,6 +475,12 @@ class Tracker {
         }
     }
 
+    /**
+     * Logs an error message.
+     * @internal
+     * @param string $message the message to be logged
+     * @return void
+     */
     protected function _log_error($message)
     {
         if (isset($this->_logger)) {
@@ -383,16 +493,20 @@ class Tracker {
     // Public API
     // ---
 
-    public function __construct($options = array(), /*LoggerInterface*/ $logger = null)
+    /**
+     * Tracker constructor.
+     * @param array $options the tracker initialization options.
+     * @param LoggerInterface|null $logger logger instance use to log errors during run-time.
+     * @throws Exception if cURL is not enabled.
+     * @throws InvalidArgumentException if given options are invalid.
+     */
+    public function __construct($options = array(), LoggerInterface $logger = null)
     {
         if (!is_callable('curl_init'))
             throw new Exception("Tracker class requires cURL to be enabled!");
 
-        if (!is_array($options))
-            throw new Exception("Tracker options must be provided in array format!");
-
         if (!$this->_validateOptions($options))
-            throw new Exception("Tracker initializatin options are invalid!");
+            throw new InvalidArgumentException("Tracker initialization options are invalid!");
 
         $this->_options = array_merge($this->_defaults, $options);
 
@@ -401,20 +515,21 @@ class Tracker {
     }
 
     /**
-     * Does the approriate sending of the collected events to Houston on demand.
-     * @return {void}
+     * Does the appropriate sending of the collected events to "Houston" on demand.
+     * @return void
      */
     public function flush()
     {
         $this->_flush();
     }
 
-    /** Add more context data otherwise it's meaningless */
+    /**
+     * Tracks the session starting time for a given client ID.
+     * Add more context data otherwise it's meaningless
+     * @param string $cid Client ID.
+     */
     public function startSession($cid)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_log_error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         $data = array(
             "cid" => $cid,
             "sc"  => "start",
@@ -424,12 +539,13 @@ class Tracker {
         $this->_track(self::NON_INTERACTIVE, self::NON_INTERACTIVE, $data, array(), array());
     }
 
-    /** Add more context data otherwise it's meaningless */
+    /**
+     * Tracks the session ending time for a given client ID.
+     * Add more context data otherwise it's meaningless
+     * @param string $cid Client ID.
+     */
     public function endSession($cid)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_log_error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         $data = array(
             "cid" => $cid,
             "sc"  => "end",
@@ -439,11 +555,16 @@ class Tracker {
         $this->_track(self::NON_INTERACTIVE, self::NON_INTERACTIVE, $data, array(), array());
     }
 
+
+    /**
+     * Tracks page views.
+     * @param string $cid Client ID.
+     * @param string $hostname Document hostname.
+     * @param string $page Page.
+     * @param string $title Title.
+     */
     public function trackPageView($cid, $hostname, $page, $title)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_log_error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         if ( !is_string($hostname) || empty($hostname) )
             return $this->_log_error(sprintf("%s %s invalid param \$hostname", self::TRACKING_LOG, __FUNCTION__));
 
@@ -463,11 +584,17 @@ class Tracker {
         $this->_track(self::PAGE_VIEW, self::PAGE_VIEW, $data, array(), array());
     }
 
+
+    /**
+     * Tracks Events;
+     * @param string $cid Client ID.
+     * @param string $category Event Category.
+     * @param string $action Event Action.
+     * @param string $label Event label.
+     * @param string $value Event value.
+     */
     public function trackEvent($cid, $category, $action, $label = null, $value = null)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_log_error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         if (!isset($category) || !is_string($category) || empty($category))
             return $this->_log_error(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
 
@@ -501,15 +628,22 @@ class Tracker {
     // e-Commerce tracking
     // ---
 
-    // To send ecommerce data, send one transaction hit to represent an entire transaction,
+    // To send e-commerce data, send one transaction hit to represent an entire transaction,
     // then send an item hit for each item in the transaction.
     // The transaction ID ti links all the hits together to represent the entire purchase.
 
-    public function trackTransaction($cid, $txnId, $affiliation = "Biscate", $revenue = 0, $shipping = 0, $tax = 0, $currency="MZN")
+    /**
+     * Tracks e-commerce transactions.
+     * @param string $cid Client ID.
+     * @param string $txnId transaction ID.
+     * @param string $affiliation Transaction affiliation.
+     * @param int $revenue Transaction revenue.
+     * @param int $shipping Transaction shipping.
+     * @param int $tax Transaction tax.
+     * @param string $currency Currency code.
+     */
+    public function trackTransaction($cid, $txnId, $affiliation, $revenue = 0, $shipping = 0, $tax = 0, $currency="MZN")
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_log_error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         if ( !isset($txnId) )
             return $this->_log_error(sprintf("%s %s invalid param \$txnId", self::TRACKING_LOG, __FUNCTION__));
 
@@ -525,7 +659,7 @@ class Tracker {
         if ( isset($tax) && (!is_numeric($tax) || $tax < 0) )
             return $this->_log_error(sprintf("%s %s invalid param \$tax", self::TRACKING_LOG, __FUNCTION__));
 
-        // TODO: Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
+        // @todo: Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
         if ( isset($currency) && (!is_string($currency) || strlen($currency) != 3) )
             return $this->_log_error(sprintf("%s %s invalid param \$currency", self::TRACKING_LOG, __FUNCTION__));
 
@@ -552,11 +686,19 @@ class Tracker {
         $this->_track(self::TRANSACTION, self::TRANSACTION, $data, array(), array());
     }
 
-    public function trackTransactionItem($cid, $txnId, $name, $price = 0, $quantity = 1, $sku=NULL, $variation=NULL, $currency="MZN")
+    /**
+     * Tracks e-commerce transaction items
+     * @param string $cid Client ID.
+     * @param string $txnId Transaction ID.
+     * @param string $name Item name.
+     * @param int $price Item price.
+     * @param int $quantity Item quantity.
+     * @param string $sku Item code / SKU.
+     * @param string $variation Item variation / category.
+     * @param string $currency Currency code.
+     */
+    public function trackTransactionItem($cid, $txnId, $name, $price = 0, $quantity = 1, $sku=null, $variation=null, $currency="MZN")
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_log_error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         if ( !isset($txnId) )
             return $this->_log_error(sprintf("%s %s invalid param \$txnId", self::TRACKING_LOG, __FUNCTION__));
 
@@ -603,11 +745,15 @@ class Tracker {
         $this->_track(self::ITEM, self::ITEM, $data, array(), array());
     }
 
+    /**
+     * Tracks social network like interactions.
+     * @param string $cid Client ID.
+     * @param string $action Social Action.
+     * @param string $network Social Network.
+     * @param string $target Social Target.
+     */
     public function trackSocial($cid, $action, $network, $target)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_log_error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         if (!isset($action) || !is_string($action))
             return $this->_log_error(sprintf("%s %s invalid param \$action", self::TRACKING_LOG, __FUNCTION__));
 
@@ -627,11 +773,15 @@ class Tracker {
         $this->_track(self::SOCIAL, self::SOCIAL, $data, array(), array());
     }
 
+    /**
+     * Tracks Exceptions.
+     * @param string $cid Client ID.
+     * @param string|Exception $ex Exception description.
+     * @param boolean $isFatal Exception is fatal?
+     * @return null
+     */
     public function trackException($cid, $ex = null, $isFatal = null)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_logger->error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         if (!isset($isFatal) || !is_bool($isFatal) )
             return $this->_logger->error(sprintf("%s %s invalid param \$isFatal", self::TRACKING_LOG, __FUNCTION__));
 
@@ -657,11 +807,24 @@ class Tracker {
         $this->_track(self::EXCEPTION, self::EXCEPTION, $data, array(), array());
     }
 
+    /**
+     * Tracks User Timing
+     * @param string $cid Client ID.
+     * @param string $category Timing category
+     * @param string $variable Timing variable.
+     * @param int $time Timing time.
+     * @param string $label Timing label.
+     *
+     * These values are part of browser load times
+     * @param int $dnsLoadTime DNS load time.
+     * @param int $pageDownloadTime Page download time.
+     * @param int $redirectResponseTime Redirect time.
+     * @param int $tcpConnectTime TCP connect time.
+     * @param int $serverResponseTime Server response time.
+     * @return null
+     */
     public function trackUserTiming($cid, $category, $variable, $time, $label = null, $dnsLoadTime = null, $pageDownloadTime = null, $redirectResponseTime = null, $tcpConnectTime = null, $serverResponseTime = null)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_logger->error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         if (!isset($category) || !is_string($category))
             return $this->_logger->error(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
 
@@ -714,14 +877,20 @@ class Tracker {
         if (isset($serverResponseTime))
             $data["srt"] = $serverResponseTime;
 
-        $this->_track(self::USER_TIMING, self::USER_TIME, $data, array(), array());
+        $this->_track(self::TIMING, self::TIMING, $data, array(), array());
     }
 
-    public function trackScreenView($appName, $appVersion, $appId, $appInstallerId, $screenName)
+    /**
+     * Tracks app / screen views
+     * @param string $cid Client ID.
+     * @param string $appName App name
+     * @param string $appVersion App version.
+     * @param string $appId App Id.
+     * @param string $appInstallerId App Installer Id.
+     * @param string $screenName Screen name / content description.
+     */
+    public function trackScreenView($cid, $appName, $appVersion, $appId, $appInstallerId, $screenName)
     {
-        if ( isset($cid) && !$this->_is_guid($cid) )
-            return $this->_logger->error(sprintf("%s %s invalid param \$cid", self::TRACKING_LOG, __FUNCTION__));
-
         $data = array(
             "cid"  => $cid,
             "an"   => $appName,
@@ -734,5 +903,3 @@ class Tracker {
         $this->_track(self::SCREEN_VIEW, self::SCREEN_VIEW, $data, array(), array());
     }
 }
-
-?>
