@@ -95,6 +95,7 @@ class Tracker {
 
     // Enabled / Valid event/hit types
     const EVENT_TYPES = array(
+        self::NON_INTERACTIVE,
         self::EVENT,
         self::EXCEPTION,
         self::PAGE_VIEW,
@@ -150,7 +151,7 @@ class Tracker {
             return $this->_log_error(sprintf("%s %s is not enabled", self::TRACKING_LOG, __FUNCTION__));
 
         if ( !in_array($eventType, self::EVENT_TYPES) )
-            return $this->_log_error(sprintf("%s %s %s is not a valid event type", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s %s is not a valid event type", self::TRACKING_LOG, __FUNCTION__, $eventType));
 
         if ( !$this->_validateProps($props) )
             return $this->_log_error(sprintf("%s %s given properties are invalid", self::TRACKING_LOG, __FUNCTION__));
