@@ -784,7 +784,7 @@ class Tracker {
      * @param boolean $isFatal Exception is fatal?
      * @return null
      */
-    public function trackException($cid, $ex = null, $isFatal = null)
+    public function trackException($cid, $ex = null, $isFatal = false)
     {
         if (!isset($isFatal) || !is_bool($isFatal) )
             return $this->_log_error(sprintf("%s %s invalid param \$isFatal", self::TRACKING_LOG, __FUNCTION__));
