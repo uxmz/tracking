@@ -2,7 +2,6 @@
 /**
  * Tracker
  * @license   https://www.tldrlegal.com/l/mit MIT
- * @link      https://wg
  * @package Tracker
  */
 
