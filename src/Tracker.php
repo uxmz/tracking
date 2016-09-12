@@ -787,7 +787,7 @@ class Tracker {
     public function trackException($cid, $ex = null, $isFatal = null)
     {
         if (!isset($isFatal) || !is_bool($isFatal) )
-            return $this->_logger->error(sprintf("%s %s invalid param \$isFatal", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$isFatal", self::TRACKING_LOG, __FUNCTION__));
 
         $data = array("cid" => $cid);
 
@@ -798,9 +798,9 @@ class Tracker {
             elseif (is_string($ex))
                 $data["exd"] = $ex;
             else
-                return $this->_logger->error(sprintf("%s %s invalid param type for \$ex", self::TRACKING_LOG, __FUNCTION__));
+                return $this->_log_error(sprintf("%s %s invalid param type for \$ex", self::TRACKING_LOG, __FUNCTION__));
         } else {
-            return $this->_logger->error(sprintf("%s %s invalid param \$ex", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$ex", self::TRACKING_LOG, __FUNCTION__));
         }
 
         if (isset($isFatal))
@@ -830,31 +830,31 @@ class Tracker {
     public function trackUserTiming($cid, $category, $variable, $time, $label = null, $dnsLoadTime = null, $pageDownloadTime = null, $redirectResponseTime = null, $tcpConnectTime = null, $serverResponseTime = null)
     {
         if (!isset($category) || !is_string($category))
-            return $this->_logger->error(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
 
         if (!isset($variable) || !is_string($variable))
-            return $this->_logger->error(sprintf("%s %s invalid param \$variable", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$variable", self::TRACKING_LOG, __FUNCTION__));
 
         if (!isset($time) || !is_integer($time))
-            return $this->_logger->error(sprintf("%s %s invalid param \$time", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$time", self::TRACKING_LOG, __FUNCTION__));
 
         if (isset($label) && !is_string($label))
-            return $this->_logger->error(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
 
         if (isset($dnsLoadTime) && !is_integer($dnsLoadTime))
-            return $this->_logger->error(sprintf("%s %s invalid param \$dnsLoadTime", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$dnsLoadTime", self::TRACKING_LOG, __FUNCTION__));
 
         if (isset($pageDownloadTime) && !is_integer($pageDownloadTime))
-            return $this->_logger->error(sprintf("%s %s invalid param \$pageDownloadTime", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$pageDownloadTime", self::TRACKING_LOG, __FUNCTION__));
 
         if (isset($redirectResponseTime) && !is_integer($redirectResponseTime))
-            return $this->_logger->error(sprintf("%s %s invalid param \$redirectResponseTime", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$redirectResponseTime", self::TRACKING_LOG, __FUNCTION__));
 
         if (isset($tcpConnectTime) && !is_integer($tcpConnectTime))
-            return $this->_logger->error(sprintf("%s %s invalid param \$tcpConnectTime", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$tcpConnectTime", self::TRACKING_LOG, __FUNCTION__));
 
         if (isset($serverResponseTime) && !is_integer($serverResponseTime))
-            return $this->_logger->error(sprintf("%s %s invalid param \$serverResponseTime", self::TRACKING_LOG, __FUNCTION__));
+            return $this->_log_error(sprintf("%s %s invalid param \$serverResponseTime", self::TRACKING_LOG, __FUNCTION__));
 
         $data = array(
             "cid" => $cid,
