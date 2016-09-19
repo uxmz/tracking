@@ -50,6 +50,6 @@ $RECYCLE.BIN/
 
 **/vendor
 !vendor/.gitkeep
-/nbproject/private/
+/nbproject
 /.idea
 /-docs

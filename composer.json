@@ -1,6 +1,5 @@
 {
     "name": "uxmz/ga",
-    "version": "0.0.1",
     "minimum-stability": "dev",
     "description": "PHP client for Google Analytics Measurement Protocol",
     "keywords": ["analytics", "tracking", "measurement protocol", "ga"],
