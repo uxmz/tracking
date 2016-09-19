@@ -188,7 +188,7 @@ class Tracker {
 
         // Proxy-Overrides
         // ---
-        $ip = $this->_get_client_ip(true);
+        $ip = $this->_get_client_ip(true, $this->_options["proxies"]);
         if ($this->_is_valid_ip($ip)) {
             $data["uip"] = $ip;
         }
@@ -199,7 +199,7 @@ class Tracker {
 
         $data["geoid"] = $this->_options["geoid"]; // Maybe get from IP
 
-        /** @todo: Allow overriding this so it gets the language chosen by the user. */
+        /** @todo Allow overriding this so it gets the language chosen by the user. */
          $data["ul"] = 'pt';
 
         // If there's a UID set in _ga cookie take it otherwise user internal if available
@@ -420,7 +420,7 @@ class Tracker {
     }
 
     /**
-     * Get' the current request's IP.
+     * Gets the current request's IP.
      * @internal
      * @param bool $check_proxies if it should also check proxies or not
      * @param array $proxies the list of trusted proxies
@@ -663,7 +663,7 @@ class Tracker {
         if ( isset($tax) && (!is_numeric($tax) || $tax < 0) )
             return $this->_log_error(sprintf("%s %s invalid param \$tax", self::TRACKING_LOG, __FUNCTION__));
 
-        // @todo: Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
+        // @todo Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
         if ( isset($currency) && (!is_string($currency) || strlen($currency) != 3) )
             return $this->_log_error(sprintf("%s %s invalid param \$currency", self::TRACKING_LOG, __FUNCTION__));
 
@@ -721,7 +721,7 @@ class Tracker {
         if ( isset($variation) && (!is_string($variation) || strlen($variation) === 0) )
             return $this->_log_error(sprintf("%s %s invalid param \$variation", self::TRACKING_LOG, __FUNCTION__));
 
-        // TODO: Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
+        // @todo Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
         if ( isset($currency) && (!is_string($currency) || strlen($currency) != 3 ) )
             return $this->_log_error(sprintf("%s %s invalid param \$currency", self::TRACKING_LOG, __FUNCTION__));
 
