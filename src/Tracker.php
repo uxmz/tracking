@@ -1,8 +1,10 @@
 <?php
 /**
- * Tracker
+ * Tracker class providing Google Analytics measuring protocol implementation.
+ * 
+ * @author Paulo Phagula <paulo@ux.co.mz>
+ * @copyright 2016 UX - Information Technologies, Lda.
  * @license   https://www.tldrlegal.com/l/mit MIT
- * @package Tracker
  */
 
 namespace Uxmz\Ga;
@@ -283,7 +285,7 @@ class Tracker {
         curl_setopt($req, CURLOPT_ENCODING, "");
         curl_setopt($req, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
         curl_setopt($req, CURLOPT_MAXREDIRS, 10); //only 2 redirects
-        curl_setopt($req, CURLOPT_TIMEOUT, 30);
+        curl_setopt($req, CURLOPT_TIMEOUT, 1);
         curl_setopt($req, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         curl_setopt($req, CURLOPT_FRESH_CONNECT, true); // Always ensure the connection is fresh
         curl_setopt($req, CURLOPT_SSL_VERIFYPEER, false);
