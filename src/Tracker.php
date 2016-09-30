@@ -1,7 +1,7 @@
 <?php
 /**
  * Tracker class providing Google Analytics measuring protocol implementation.
- * 
+ *
  * @author Paulo Phagula <paulo@ux.co.mz>
  * @copyright 2016 UX - Information Technologies, Lda.
  * @license   https://www.tldrlegal.com/l/mit MIT
@@ -646,9 +646,10 @@ class Tracker {
      * @param int $revenue Transaction revenue.
      * @param int $shipping Transaction shipping.
      * @param int $tax Transaction tax.
-     * @param string $currency Currency code.
+     * @param string $currency Currency code. It should belong on the
+     * {@link https://support.google.com/analytics/answer/6205902?hl=en#supported-currencies Supported currencies and codes} list
      */
-    public function trackTransaction($cid, $txnId, $affiliation, $revenue = 0, $shipping = 0, $tax = 0, $currency="MZN")
+    public function trackTransaction($cid, $txnId, $affiliation, $revenue = 0, $shipping = 0, $tax = 0, $currency="USD")
     {
         if ( !isset($txnId) )
             return $this->_log_error(sprintf("%s %s invalid param \$txnId", self::TRACKING_LOG, __FUNCTION__));
@@ -701,9 +702,10 @@ class Tracker {
      * @param int $quantity Item quantity.
      * @param string $sku Item code / SKU.
      * @param string $variation Item variation / category.
-     * @param string $currency Currency code.
+     * @param string $currency Currency code. It should belong on the
+     * {@link https://support.google.com/analytics/answer/6205902?hl=en#supported-currencies Supported currencies and codes} list
      */
-    public function trackTransactionItem($cid, $txnId, $name, $price = 0, $quantity = 1, $sku=null, $variation=null, $currency="MZN")
+    public function trackTransactionItem($cid, $txnId, $name, $price = 0, $quantity = 1, $sku=null, $variation=null, $currency="USD")
     {
         if ( !isset($txnId) )
             return $this->_log_error(sprintf("%s %s invalid param \$txnId", self::TRACKING_LOG, __FUNCTION__));
