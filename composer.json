@@ -2,7 +2,7 @@
     "name": "uxmz/ga",
     "minimum-stability": "dev",
     "description": "PHP client for Google Analytics Measurement Protocol",
-    "keywords": ["analytics", "tracking", "measurement protocol", "ga"],
+    "keywords": ["google analytics", "analytics", "tracking"],
     "license": "MIT",
     "authors": [
         {
