@@ -10,6 +10,7 @@
 namespace Uxmz\Ga;
 
 use Psr\Log\LoggerInterface;
+use GuzzleHttp\ClientInterface;
 use \Exception, \InvalidArgumentException;
 
 /**
@@ -122,6 +123,12 @@ class Tracker {
      * @var LoggerInterface
      */
     protected $_logger;
+
+    /**
+     * The http client
+     * @var GuzzleHttp\ClientInterface
+     */
+    protected $_httpClient;
 
     /**
      * Checks if we can track or not.
@@ -266,40 +273,42 @@ class Tracker {
             $post = rtrim(implode("\r\n", $post), "\r\n");
         }
 
-        $req = curl_init(); // create curl resource
-
         if ($hitCount === 1) {
-            curl_setopt($req, CURLOPT_URL, $url . "?" . http_build_query($body)); // set url
+            $promise = $this->_httpClient->requestAsync('GET', $url . "?" . http_build_query($body));
         } else {
-            curl_setopt($req, CURLOPT_URL, $url); // set url
-            curl_setopt($req, CURLOPT_CUSTOMREQUEST, 'POST');
-            curl_setopt($req, CURLOPT_POSTFIELDS, $post);
-            curl_setopt($req, CURLOPT_HTTPHEADER, array(
-                "cache-control: no-cache",
-                "content-type: text/html"
-            ));
+            $promise = $this->_httpClient->requestAsync('POST', $url, [
+                'body' => $post,
+                'headers' => [
+                    'cache-control' => 'no-cache',
+                    'content-type' => 'text/html',
+                ]
+            ]);
         }
 
-        curl_setopt($req, CURLOPT_VERBOSE, true);
-        curl_setopt($req, CURLOPT_RETURNTRANSFER, true); //return the transfer as a string
-        curl_setopt($req, CURLOPT_ENCODING, "");
-        curl_setopt($req, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
-        curl_setopt($req, CURLOPT_MAXREDIRS, 10); //only 2 redirects
-        curl_setopt($req, CURLOPT_TIMEOUT, 1);
-        curl_setopt($req, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        curl_setopt($req, CURLOPT_FRESH_CONNECT, true); // Always ensure the connection is fresh
-        curl_setopt($req, CURLOPT_SSL_VERIFYPEER, false);
-        $res = curl_exec($req); // execute the curl command
+        $newPromise = $promise->then(
+            function ($response) {
+                if ($this->_options["debug"]) {
+                    $responseData = json_decode($response->getBody(), true);
+                    if (!$responseData['hitParsingResult'][0]['valid']) {
+                        throw new Exception("Invalid hit sent. Got response:\n" . $response->getBody());
+                    }
 
-        if ($res === false) {
-            $this->_log_error(sprintf("%s cURL error (%d): %s", self::TRACKING_LOG, curl_errno($req), curl_error($req)));
-        } else {
-            if ($this->_options["log"] === true) {
-                $this->_log_error(sprintf("%s %s response %s\n", self::TRACKING_LOG, __FUNCTION__, var_export(json_decode($res, true), true)));
+                    $this->_log_debug($response->getBody());
+                }
+            },
+            function ($exception) {
+                if ($this->_options["debug"]) {
+                    throw $exception;
+                }
+
+                $this->_log_error($exception->getMessage());
             }
+        );
+
+        if ($this->_options['debug']) {
+            $newPromise->wait();
         }
 
-        curl_close($req); // close the connection
         $this->_eventsQueue = array(); // clear queue.
     }
 
@@ -467,7 +476,22 @@ class Tracker {
     }
 
     /**
-     * Logs and info message.
+     * Logs a debug message.
+     * @internal
+     * @param string $message the message to be logged
+     * @return void
+     */
+    protected function _log_debug($message)
+    {
+        if ($this->_logger) {
+            $this->_logger->debug($message);
+        } else {
+            error_log($message);
+        }
+    }
+
+    /**
+     * Logs an info message.
      * @internal
      * @param string $message the message to be logged
      * @return void
@@ -502,20 +526,19 @@ class Tracker {
     /**
      * Tracker constructor.
      * @param array $options the tracker initialization options.
+     * @param ClientInterface $httpClient http client used for making requests.
      * @param LoggerInterface|null $logger logger instance use to log errors during run-time.
      * @throws Exception if cURL is not enabled.
      * @throws InvalidArgumentException if given options are invalid.
      */
-    public function __construct($options = array(), LoggerInterface $logger = null)
+    public function __construct($options = array(), ClientInterface $httpClient, LoggerInterface $logger = null)
     {
-        if (!is_callable('curl_init'))
-            throw new Exception("Tracker class requires cURL to be enabled!");
-
         if (!$this->_validateOptions($options))
             throw new InvalidArgumentException("Tracker initialization options are invalid!");
 
         $this->_options = array_merge($this->_defaults, $options);
 
+        $this->_httpClient = $httpClient;
         $this->_logger = $logger;
         $this->_initialized = true;
     }
@@ -788,31 +811,25 @@ class Tracker {
      * @param boolean $isFatal Exception is fatal?
      * @return null
      */
-    public function trackException($cid, $ex = null, $isFatal = false)
+    public function trackException($cid, $ex, $isFatal = false)
     {
-        if (!isset($isFatal) || !is_bool($isFatal) )
+        if (!is_bool($isFatal)) {
             return $this->_log_error(sprintf("%s %s invalid param \$isFatal", self::TRACKING_LOG, __FUNCTION__));
-
-        $data = array("cid" => $cid);
-
-        if (isset($ex)) {
-            if (is_subclass_of($ex, "Exception"))
-                $data["exd"] = $ex->getMessage();
-
-            elseif (is_string($ex))
-                $data["exd"] = $ex;
-            else
-                return $this->_log_error(sprintf("%s %s invalid param type for \$ex", self::TRACKING_LOG, __FUNCTION__));
-        } else {
-            return $this->_log_error(sprintf("%s %s invalid param \$ex", self::TRACKING_LOG, __FUNCTION__));
         }
 
-        if (isset($isFatal))
-            $data["exf"] = $isFatal;
+        if (!is_string($ex) && !($ex instanceof Exception)) {
+            return $this->_log_error(sprintf("%s %s invalid param type for \$ex", self::TRACKING_LOG, __FUNCTION__));
+        }
+
+        $data = [
+            'cid' => $cid,
+            'exd' => is_string($ex) ? $ex : $ex->getMessage(),
+            'exf' => $isFatal
+        ];
 
         $data["tid"] = $this->_options["appTrackingId"];
 
-        $this->_track(self::EXCEPTION, self::EXCEPTION, $data, array(), array());
+        $this->_track(self::EXCEPTION, self::EXCEPTION, $data);
     }
 
     /**
