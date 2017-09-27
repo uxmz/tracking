@@ -100,7 +100,7 @@ class TrackerTest extends \PHPUnit_Framework_TestCase
      * @covers trackException
      */
     public function should_track_exception_as_object() {
-        $this->SUT->trackException($this->cid, new \Exception, false);
+        $this->SUT->trackException($this->cid, new \Exception('exception object'), false);
     }
 
     /**
@@ -108,7 +108,7 @@ class TrackerTest extends \PHPUnit_Framework_TestCase
      * @covers trackException
      */
     public function should_track_exception_as_string() {
-        $this->SUT->trackException($this->cid, 'bloody exception', 'target');
+        $this->SUT->trackException($this->cid, 'exception string', false);
     }
 
     /**

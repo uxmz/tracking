@@ -811,31 +811,25 @@ class Tracker {
      * @param boolean $isFatal Exception is fatal?
      * @return null
      */
-    public function trackException($cid, $ex = null, $isFatal = false)
+    public function trackException($cid, $ex, $isFatal = false)
     {
-        if (!isset($isFatal) || !is_bool($isFatal) )
+        if (!is_bool($isFatal)) {
             return $this->_log_error(sprintf("%s %s invalid param \$isFatal", self::TRACKING_LOG, __FUNCTION__));
-
-        $data = array("cid" => $cid);
-
-        if (isset($ex)) {
-            if (is_subclass_of($ex, "Exception"))
-                $data["exd"] = $ex->getMessage();
-
-            elseif (is_string($ex))
-                $data["exd"] = $ex;
-            else
-                return $this->_log_error(sprintf("%s %s invalid param type for \$ex", self::TRACKING_LOG, __FUNCTION__));
-        } else {
-            return $this->_log_error(sprintf("%s %s invalid param \$ex", self::TRACKING_LOG, __FUNCTION__));
         }
 
-        if (isset($isFatal))
-            $data["exf"] = $isFatal;
+        if (!is_string($ex) && !($ex instanceof Exception)) {
+            return $this->_log_error(sprintf("%s %s invalid param type for \$ex", self::TRACKING_LOG, __FUNCTION__));
+        }
+
+        $data = [
+            'cid' => $cid,
+            'exd' => is_string($ex) ? $ex : $ex->getMessage(),
+            'exf' => $isFatal
+        ];
 
         $data["tid"] = $this->_options["appTrackingId"];
 
-        $this->_track(self::EXCEPTION, self::EXCEPTION, $data, array(), array());
+        $this->_track(self::EXCEPTION, self::EXCEPTION, $data);
     }
 
     /**
