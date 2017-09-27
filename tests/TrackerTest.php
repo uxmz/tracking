@@ -3,27 +3,24 @@
 namespace Uxmz\Ga\Tests;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Exception\RequestException;
+use Psr\Log\LoggerInterface;
 
 use Uxmz\Ga\Tracker;
 
 class TrackerTest extends \PHPUnit_Framework_TestCase
 {
     public function setUp() {
-        $mock = new MockHandler([
-            new Response(200, ['X-Foo' => 'Bar']),
-        ]);
-
-        $handler = HandlerStack::create($mock);
         /** @var ClientInterface */
-        $this->httpClient = new Client(/*['handler' => $handler]*/);
+        $httpClient = new Client();
 
         /** @var LoggerInterface */
-        $this->logger = null;
+        $logger = null;
 
         $trackerOptions = [
             "applicationName" => "Test",
@@ -33,7 +30,7 @@ class TrackerTest extends \PHPUnit_Framework_TestCase
             "debug" => true,
         ];
 
-        $this->SUT = new Tracker($trackerOptions, $this->httpClient, $this->logger);
+        $this->SUT = new Tracker($httpClient, $logger, $trackerOptions);
         $this->cid = '';
     }
 
