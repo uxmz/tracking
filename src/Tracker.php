@@ -536,7 +536,7 @@ class Tracker
     protected function logDebug($message)
     {
         if ($this->logger) {
-            $this->logger->debug($message);
+            return $this->logger->debug($message);
         }
 
         error_log($message);
