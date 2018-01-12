@@ -338,9 +338,7 @@ class Tracker
             }
         );
 
-        if ($this->options['debug']) {
-            $newPromise->wait();
-        }
+        $newPromise->wait();
 
         $this->eventsQueue = []; // clear queue.
     }
