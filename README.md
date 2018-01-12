@@ -9,7 +9,7 @@ tracker's `track_*` methods like shown bellow
 
 ```php
 $httpClient = new GuzzleHttp\Client(); // we use guzzle as http client to send hits to google analytics
-$logger = null; // You can set this to any logger adhering to the Psr\Log standard
+$logger = new \Monolog\Logger('general'); // You can set this to any logger adhering to the Psr\Log standard
 $trackerOptions = [
    "applicationName" => "Test",
    "webTrackingId" => 'UA-XXXX-Y', // initialize with you analytics property ID
