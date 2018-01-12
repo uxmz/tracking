@@ -19,7 +19,8 @@
     "require-dev": {
         "phpdocumentor/phpdocumentor": "*",
         "evert/phpdoc-md" : "~0.2.0",
-	    "phpunit/phpunit": "4.7.*"
+	    "phpunit/phpunit": "4.7.*",
+        "phpspec/prophecy": "^1.7@dev"
     },
     "autoload": {
         "psr-4": {

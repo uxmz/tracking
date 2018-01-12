@@ -163,33 +163,34 @@ class Tracker
      * Stores events we want to track in queue.
      *
      * @param string $eventType the type of thing we want to test
-     * @param string $name      the name of the event name
-     * @param array  $data      the data of the event
-     * @param array  $props     Array of key-value (string/string) pair of properties related to the event
-     * @param array  $metrics   Array of key-value (string/double) pair of metrics related to the event
+     * @param string $name the name of the event name
+     * @param array $data the data of the event
+     * @param array $props Array of key-value (string/string) pair of properties related to the event
+     * @param array $metrics Array of key-value (string/double) pair of metrics related to the event
      *
      * @return void
+     * @throws Exception
      */
     protected function track($eventType, $name, $data = [], $props = [], $metrics = [])
     {
         if (!$this->initialized) {
-            return $this->logError(sprintf("%s %s is not initialized", self::TRACKING_LOG, __FUNCTION__));
+            throw new \Exception('Class is not initialized');
         }
 
         if (!$this->canTrack()) {
-            return $this->logError(sprintf("%s %s is not enabled", self::TRACKING_LOG, __FUNCTION__));
+            throw new \Exception('Tracking is not enabled');
         }
 
         if (!in_array($eventType, self::EVENT_TYPES)) {
-            return $this->logError(sprintf("%s %s %s is not a valid event type", self::TRACKING_LOG, __FUNCTION__, $eventType));
+            throw new \InvalidArgumentException('eventType');
         }
 
         if (!$this->validateProps($props)) {
-            return $this->logError(sprintf("%s %s given properties are invalid", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('properties');
         }
 
         if (!$this->validateMetrics($metrics)) {
-            return $this->logError(sprintf("%s %s given metrics are invalid", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('metrics');
         }
 
         if ($this->options["log"] === true) {
@@ -209,7 +210,7 @@ class Tracker
                 $metricsString .= $key . ": " . $value . "\n";
             }
 
-            $this->logInfo(sprintf("%s => Type: %s \nName: %s \nData -> %s \nProperties -> %s \nMetrics -> %s", self::TRACKING_LOG, $eventType, $name, $dataString, $propsString, $metricsString));
+            $this->logger->info(sprintf("%s => Type: %s \nName: %s \nData -> %s \nProperties -> %s \nMetrics -> %s", self::TRACKING_LOG, $eventType, $name, $dataString, $propsString, $metricsString));
         }
 
         if ($eventType === self::NON_INTERACTIVE) {
@@ -326,7 +327,7 @@ class Tracker
                         throw new Exception("Invalid hit sent. Got response:\n" . $response->getBody());
                     }
 
-                    $this->logDebug($response->getBody());
+                    $this->logger->debug($response->getBody());
                 }
             },
             function (Exception $exception) {
@@ -334,7 +335,7 @@ class Tracker
                     throw $exception;
                 }
 
-                $this->logError($exception->getMessage());
+                $this->logger->error($exception->getMessage());
             }
         );
 
@@ -524,54 +525,6 @@ class Tracker
         return $ip;
     }
 
-    /**
-     * Logs a debug message.
-     *
-     * @param string $message the message to be logged
-     *
-     * @return void
-     */
-    protected function logDebug($message)
-    {
-        if ($this->logger) {
-            return $this->logger->debug($message);
-        }
-
-        error_log($message);
-    }
-
-    /**
-     * Logs an info message.
-     *
-     * @param string $message the message to be logged
-     *
-     * @return void
-     */
-    protected function logInfo($message)
-    {
-        if ($this->logger) {
-            return $this->logger->info($message);
-        }
-
-        error_log($message);
-    }
-
-    /**
-     * Logs an error message.
-     *
-     * @param string $message the message to be logged
-     *
-     * @return void
-     */
-    protected function logError($message)
-    {
-        if (isset($this->logger)) {
-            return $this->logger->error($message);
-        }
-
-        error_log($message);
-    }
-
     // Public API
     // ---
 
@@ -585,7 +538,7 @@ class Tracker
      * @throws Exception if cURL is not enabled.
      * @throws InvalidArgumentException if given options are invalid.
      */
-    public function __construct(ClientInterface $httpClient, LoggerInterface $logger = null, $options = [])
+    public function __construct(ClientInterface $httpClient, LoggerInterface $logger, $options = [])
     {
         if (!$this->validateOptions($options)) {
             throw new InvalidArgumentException("Tracker initialization options are invalid!");
@@ -615,6 +568,7 @@ class Tracker
      * @param string $cid Client ID.
      *
      * @return void
+     * @throws Exception
      */
     public function startSession($cid)
     {
@@ -634,6 +588,7 @@ class Tracker
      * @param string $cid Client ID.
      *
      * @return void
+     * @throws Exception
      */
     public function endSession($cid)
     {
@@ -650,25 +605,26 @@ class Tracker
     /**
      * Tracks page views.
      *
-     * @param string $cid      Client ID.
+     * @param string $cid Client ID.
      * @param string $hostname Document hostname.
-     * @param string $page     Page.
-     * @param string $title    Title.
+     * @param string $page Page.
+     * @param string $title Title.
      *
      * @return void
+     * @throws Exception
      */
     public function trackPageView($cid, $hostname, $page, $title)
     {
         if (!is_string($hostname) || empty($hostname)) {
-            return $this->logError(sprintf("%s %s invalid param \$hostname", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('hostname');
         }
 
         if (!is_string($page) || empty($page)) {
-            return $this->logError(sprintf("%s %s invalid param \$page", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('page');
         }
 
         if (!is_string($title) || empty($title)) {
-            return $this->logError(sprintf("%s %s invalid param \$title", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('title');
         }
 
         $data = array(
@@ -685,30 +641,31 @@ class Tracker
     /**
      * Tracks Events;
      *
-     * @param string $cid      Client ID.
+     * @param string $cid Client ID.
      * @param string $category Event Category.
-     * @param string $action   Event Action.
-     * @param string $label    Event label.
-     * @param string $value    Event value.
+     * @param string $action Event Action.
+     * @param string $label Event label.
+     * @param int $value Event value.
      *
      * @return void
+     * @throws Exception
      */
     public function trackEvent($cid, $category, $action, $label = null, $value = null)
     {
         if (!isset($category) || !is_string($category) || empty($category)) {
-            return $this->logError(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('category');
         }
 
         if (!isset($action) || !is_string($action) || empty($action)) {
-            return $this->logError(sprintf("%s %s invalid param \$action", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('action');
         }
 
         if (isset($label) && !is_string($label)) {
-            return $this->logError(sprintf("%s %s invalid param \$label", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('label');
         }
 
-        if (isset($value) && !is_int($value)) {
-            return $this->logError(sprintf("%s %s invalid param \$value", self::TRACKING_LOG, __FUNCTION__));
+        if (isset($value) && !is_integer($value)) {
+            throw new \InvalidArgumentException('value');
         }
 
         $data = array(
@@ -741,44 +698,45 @@ class Tracker
     /**
      * Tracks e-commerce transactions.
      *
-     * @param string $cid         Client ID.
-     * @param string $txnId       transaction ID.
+     * @param string $cid Client ID.
+     * @param string $txnId transaction ID.
      * @param string $affiliation Transaction affiliation.
-     * @param int    $revenue     Transaction revenue.
-     * @param int    $shipping    Transaction shipping.
-     * @param int    $tax         Transaction tax.
-     * @param string $currency    Currency code. It should belong on the
+     * @param int $revenue Transaction revenue.
+     * @param int $shipping Transaction shipping.
+     * @param int $tax Transaction tax.
+     * @param string $currency Currency code. It should belong on the
      *                            {@link
      *                            https://support.google.com/analytics/answer/6205902?hl=en#supported-currencies
      *                            Supported currencies and codes} list
      *
      * @return void
+     * @throws Exception
      */
     public function trackTransaction($cid, $txnId, $affiliation, $revenue = 0, $shipping = 0, $tax = 0, $currency="USD")
     {
         if (!isset($txnId)) {
-            return $this->logError(sprintf("%s %s invalid param \$txnId", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('txnId');
         }
 
         if (isset($affiliation) && (!is_string($affiliation) || strlen($affiliation) === 0)) {
-            return $this->logError(sprintf("%s %s invalid param \$affiliation", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('affiliation');
         }
 
         if (isset($revenue) && (!is_numeric($revenue) || $revenue < 0)) {
-            return $this->logError(sprintf("%s %s invalid param \$revenue", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('revenue');
         }
 
         if (isset($shipping) && (!is_numeric($shipping) || $shipping < 0)) {
-            return $this->logError(sprintf("%s %s invalid param \$shipping", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('shipping');
         }
 
         if (isset($tax) && (!is_numeric($tax) || $tax < 0)) {
-            return $this->logError(sprintf("%s %s invalid param \$tax", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('tax');
         }
 
         // TODO: Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
         if (isset($currency) && (!is_string($currency) || strlen($currency) != 3)) {
-            return $this->logError(sprintf("%s %s invalid param \$currency", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('currency');
         }
 
         $data = array(
@@ -812,49 +770,50 @@ class Tracker
     /**
      * Tracks e-commerce transaction items
      *
-     * @param string $cid       Client ID.
-     * @param string $txnId     Transaction ID.
-     * @param string $name      Item name.
-     * @param int    $price     Item price.
-     * @param int    $quantity  Item quantity.
-     * @param string $sku       Item code / SKU.
+     * @param string $cid Client ID.
+     * @param string $txnId Transaction ID.
+     * @param string $name Item name.
+     * @param int $price Item price.
+     * @param int $quantity Item quantity.
+     * @param string $sku Item code / SKU.
      * @param string $variation Item variation / category.
-     * @param string $currency  Currency code. It should belong on the
+     * @param string $currency Currency code. It should belong on the
      *                          {@link
      *                          https://support.google.com/analytics/answer/6205902?hl=en#supported-currencies
      *                          Supported currencies and codes} list
      *
      * @return void
+     * @throws Exception
      */
     public function trackTransactionItem($cid, $txnId, $name, $price = 0, $quantity = 1, $sku=null, $variation=null, $currency="USD")
     {
         if (!isset($txnId)) {
-            return $this->logError(sprintf("%s %s invalid param \$txnId", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('txnId');
         }
 
         if (!isset($name) || !is_string($name) || strlen($name) === 0) {
-            return $this->logError(sprintf("%s %s invalid param \$name", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('name');
         }
 
         if (isset($price) && (!is_numeric($price) || $price < 0)) {
-            return $this->logError(sprintf("%s %s invalid param \$price", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('price');
         }
 
         if (isset($quantity) && (!is_integer($quantity) || $quantity < 1)) {
-            return $this->logError(sprintf("%s %s invalid param \$quantity", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('quantity');
         }
 
         if (isset($sku) && (!is_string($variation) || strlen($variation) === 0)) {
-            return $this->logError(sprintf("%s %s invalid param \$sku", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('sku');
         }
 
         if (isset($variation) && (!is_string($variation) || strlen($variation) === 0)) {
-            return $this->logError(sprintf("%s %s invalid param \$variation", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('variation');
         }
 
         // TODO: Drop this poor regex and validate properly against ISO 4217 - http://www.iso.org/iso/home/standards/currency_codes.htm
         if (isset($currency) && (!is_string($currency) || strlen($currency) != 3)) {
-            return $this->logError(sprintf("%s %s invalid param \$currency", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('currency');
         }
 
         $data = array(
@@ -889,25 +848,26 @@ class Tracker
     /**
      * Tracks social network like interactions.
      *
-     * @param string $cid     Client ID.
-     * @param string $action  Social Action.
+     * @param string $cid Client ID.
+     * @param string $action Social Action.
      * @param string $network Social Network.
-     * @param string $target  Social Target.
+     * @param string $target Social Target.
      *
      * @return void
+     * @throws Exception
      */
     public function trackSocial($cid, $action, $network, $target)
     {
         if (!isset($action) || !is_string($action)) {
-            return $this->logError(sprintf("%s %s invalid param \$action", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('action');
         }
 
         if (!isset($network) || !is_string($network)) {
-            return $this->logError(sprintf("%s %s invalid param \$network", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('network');
         }
 
         if (!isset($target) || !is_string($target)) {
-            return $this->logError(sprintf("%s %s invalid param \$target", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('target');
         }
 
         $data = array(
@@ -923,20 +883,21 @@ class Tracker
     /**
      * Tracks Exceptions.
      *
-     * @param string           $cid     Client ID.
-     * @param string|Exception $ex      Exception description.
-     * @param boolean          $isFatal Exception is fatal?
+     * @param string $cid Client ID.
+     * @param string|Exception $ex Exception description.
+     * @param boolean $isFatal Exception is fatal?
      *
      * @return void
+     * @throws Exception
      */
     public function trackException($cid, $ex, $isFatal = false)
     {
         if (!is_bool($isFatal)) {
-            return $this->logError(sprintf("%s %s invalid param \$isFatal", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('isFatal');
         }
 
         if (!is_string($ex) && !($ex instanceof Exception)) {
-            return $this->logError(sprintf("%s %s invalid param type for \$ex", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('ex');
         }
 
         $data = [
@@ -953,59 +914,60 @@ class Tracker
     /**
      * Tracks User Timing
      *
-     * @param string $cid                  Client ID.
-     * @param string $category             Timing category
-     * @param string $variable             Timing variable.
-     * @param int    $time                 Timing time.
-     * @param string $label                Timing label.
+     * @param string $cid Client ID.
+     * @param string $category Timing category
+     * @param string $variable Timing variable.
+     * @param int $time Timing time.
+     * @param string $label Timing label.
      *                                     These values
      *                                     are part of
      *                                     browser load
      *                                     times
-     * @param int    $dnsLoadTime          DNS load time.
-     * @param int    $pageDownloadTime     Page download time.
-     * @param int    $redirectResponseTime Redirect time.
-     * @param int    $tcpConnectTime       TCP connect time.
-     * @param int    $serverResponseTime   Server response time.
+     * @param int $dnsLoadTime DNS load time.
+     * @param int $pageDownloadTime Page download time.
+     * @param int $redirectResponseTime Redirect time.
+     * @param int $tcpConnectTime TCP connect time.
+     * @param int $serverResponseTime Server response time.
      *
      * @return void
+     * @throws Exception
      */
     public function trackUserTiming($cid, $category, $variable, $time, $label = null, $dnsLoadTime = null, $pageDownloadTime = null, $redirectResponseTime = null, $tcpConnectTime = null, $serverResponseTime = null)
     {
         if (!isset($category) || !is_string($category)) {
-            return $this->logError(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('category');
         }
 
         if (!isset($variable) || !is_string($variable)) {
-            return $this->logError(sprintf("%s %s invalid param \$variable", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('variable');
         }
 
         if (!isset($time) || !is_integer($time)) {
-            return $this->logError(sprintf("%s %s invalid param \$time", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('time');
         }
 
         if (isset($label) && !is_string($label)) {
-            return $this->logError(sprintf("%s %s invalid param \$category", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('category');
         }
 
         if (isset($dnsLoadTime) && !is_integer($dnsLoadTime)) {
-            return $this->logError(sprintf("%s %s invalid param \$dnsLoadTime", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('$dnsLoadTime');
         }
 
         if (isset($pageDownloadTime) && !is_integer($pageDownloadTime)) {
-            return $this->logError(sprintf("%s %s invalid param \$pageDownloadTime", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('pageDownloadTime');
         }
 
         if (isset($redirectResponseTime) && !is_integer($redirectResponseTime)) {
-            return $this->logError(sprintf("%s %s invalid param \$redirectResponseTime", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('redirectResponseTime');
         }
 
         if (isset($tcpConnectTime) && !is_integer($tcpConnectTime)) {
-            return $this->logError(sprintf("%s %s invalid param \$tcpConnectTime", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('tcpConnectTime');
         }
 
         if (isset($serverResponseTime) && !is_integer($serverResponseTime)) {
-            return $this->logError(sprintf("%s %s invalid param \$serverResponseTime", self::TRACKING_LOG, __FUNCTION__));
+            throw new \InvalidArgumentException('serverResponseTime');
         }
 
         $data = array(
@@ -1045,14 +1007,15 @@ class Tracker
     /**
      * Tracks app / screen views
      *
-     * @param string $cid            Client ID.
-     * @param string $appName        App name
-     * @param string $appVersion     App version.
-     * @param string $appId          App Id.
+     * @param string $cid Client ID.
+     * @param string $appName App name
+     * @param string $appVersion App version.
+     * @param string $appId App Id.
      * @param string $appInstallerId App Installer Id.
-     * @param string $screenName     Screen name / content description.
+     * @param string $screenName Screen name / content description.
      *
      * @return void
+     * @throws Exception
      */
     public function trackScreenView($cid, $appName, $appVersion, $appId, $appInstallerId, $screenName)
     {

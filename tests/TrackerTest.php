@@ -4,23 +4,22 @@ namespace Uxmz\Ga\Tests;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Exception\RequestException;
 use Psr\Log\LoggerInterface;
 
 use Uxmz\Ga\Tracker;
 
 class TrackerTest extends \PHPUnit_Framework_TestCase
 {
+    /** @var Tracker */
+    private $SUT;
+    private $cid;
+
     public function setUp() {
         /** @var ClientInterface */
         $httpClient = new Client();
 
         /** @var LoggerInterface */
-        $logger = null;
+        $logger = $this->prophesize(LoggerInterface::class);
 
         $trackerOptions = [
             "applicationName" => "Test",
@@ -30,7 +29,7 @@ class TrackerTest extends \PHPUnit_Framework_TestCase
             "debug" => true,
         ];
 
-        $this->SUT = new Tracker($httpClient, $logger, $trackerOptions);
+        $this->SUT = new Tracker($httpClient, $logger->reveal(), $trackerOptions);
         $this->cid = '';
     }
 
@@ -70,7 +69,7 @@ class TrackerTest extends \PHPUnit_Framework_TestCase
      * @covers trackEvent
      */
     public function should_track_page_event() {
-        $this->SUT->trackEvent($this->cid, 'category', 'action', 'label', 'value');
+        $this->SUT->trackEvent($this->cid, 'category', 'action', 'label', 0);
     }
 
     /**
