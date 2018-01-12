@@ -332,54 +332,6 @@ Gets the current request's IP.
 
 
 
-### logDebug
-
-    void Uxmz\Ga\Tracker::logDebug(string $message)
-
-Logs a debug message.
-
-
-
-* Visibility: **protected**
-
-
-#### Arguments
-* $message **string** - &lt;p&gt;the message to be logged&lt;/p&gt;
-
-
-
-### logInfo
-
-    void Uxmz\Ga\Tracker::logInfo(string $message)
-
-Logs an info message.
-
-
-
-* Visibility: **protected**
-
-
-#### Arguments
-* $message **string** - &lt;p&gt;the message to be logged&lt;/p&gt;
-
-
-
-### logError
-
-    void Uxmz\Ga\Tracker::logError(string $message)
-
-Logs an error message.
-
-
-
-* Visibility: **protected**
-
-
-#### Arguments
-* $message **string** - &lt;p&gt;the message to be logged&lt;/p&gt;
-
-
-
 ### __construct
 
     mixed Uxmz\Ga\Tracker::__construct(\GuzzleHttp\ClientInterface $httpClient, \Psr\Log\LoggerInterface|null $logger, array $options)
@@ -464,7 +416,7 @@ Tracks page views.
 
 ### trackEvent
 
-    void Uxmz\Ga\Tracker::trackEvent(string $cid, string $category, string $action, string $label, string $value)
+    void Uxmz\Ga\Tracker::trackEvent(string $cid, string $category, string $action, string $label, integer $value)
 
 Tracks Events;
 
@@ -478,7 +430,7 @@ Tracks Events;
 * $category **string** - &lt;p&gt;Event Category.&lt;/p&gt;
 * $action **string** - &lt;p&gt;Event Action.&lt;/p&gt;
 * $label **string** - &lt;p&gt;Event label.&lt;/p&gt;
-* $value **string** - &lt;p&gt;Event value.&lt;/p&gt;
+* $value **integer** - &lt;p&gt;Event value.&lt;/p&gt;
 
 
 
