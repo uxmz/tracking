@@ -46,7 +46,7 @@ class Tracker
      *
      * @var array
      */
-    protected $defaults = array(
+    protected $defaults = [
         "applicationName" => "My-Awesome-App-Name", // Nice name for app reporting in Insights.
 
         // The Application Insights server
@@ -80,7 +80,7 @@ class Tracker
         "log" => false,  // If true, data is logged before sending
 
         "proxies" => [], // list of proxies to be checked for clients IP address
-    );
+    ];
 
     /**
      * Class options after initialization.
@@ -112,7 +112,7 @@ class Tracker
     const TIMING = "timing";
 
     // Enabled / Valid event/hit types
-    const EVENT_TYPES = array(
+    const EVENT_TYPES = [
         self::NON_INTERACTIVE,
         self::EVENT,
         self::EXCEPTION,
@@ -122,7 +122,7 @@ class Tracker
         self::ITEM,
         self::SOCIAL,
         self::TIMING
-    );
+    ];
 
     /**
      * Log message prefix.
@@ -246,14 +246,14 @@ class Tracker
 
         // Queue and flush
         // ---
-        $this->eventsQueue[] = array(
+        $this->eventsQueue[] = [
             "time"      => strtotime("now"),
             "eventType" => $eventType,
             "name"      => $name,
             "data"      => $data,
             "props"     => $props,
             "metrics"   => $metrics,
-        );
+        ];
 
         if ($this->options["debug"] === true || $this->options["batching"] === false || count($this->eventsQueue) >= $this->options["maxBatchHit"]) {
             $this->_flush();
@@ -274,7 +274,7 @@ class Tracker
         }
 
         $url = ($this->options["ssl"] === true ? "https://" : "http://") . $this->options["host"] . ($this->options["debug"] === true ? "/debug" : "");
-        $body = array("v" => $this->options["apiVersion"]);
+        $body = ["v" => $this->options["apiVersion"]];
         $post = [];
 
         if (!array_key_exists("tid", $body)) {
@@ -572,11 +572,11 @@ class Tracker
      */
     public function startSession($cid)
     {
-        $data = array(
+        $data = [
             "cid" => $cid,
             "sc"  => "start",
             "dp"  => "/",
-        );
+        ];
 
         $this->track(self::NON_INTERACTIVE, self::NON_INTERACTIVE, $data);
     }
@@ -592,11 +592,11 @@ class Tracker
      */
     public function endSession($cid)
     {
-        $data = array(
+        $data = [
             "cid" => $cid,
             "sc"  => "end",
             "dp"  => "/",
-        );
+        ];
 
         $this->track(self::NON_INTERACTIVE, self::NON_INTERACTIVE, $data);
     }
@@ -627,12 +627,12 @@ class Tracker
             throw new \InvalidArgumentException('title');
         }
 
-        $data = array(
+        $data = [
             "cid" => $cid,
             "dh"  => $hostname,
             "dp"  => $page[0] === "/" ? $page : "/" . $page,
             "dt"  => $title
-        );
+        ];
 
         $this->track(self::PAGE_VIEW, self::PAGE_VIEW, $data);
     }
@@ -668,11 +668,11 @@ class Tracker
             throw new \InvalidArgumentException('value');
         }
 
-        $data = array(
+        $data = [
             "cid" => $cid,
             "ec"  => $category,
             "ea"  => $action
-        );
+        ];
 
         if (isset($label)) {
             $data["el"] = $label;
@@ -739,10 +739,10 @@ class Tracker
             throw new \InvalidArgumentException('currency');
         }
 
-        $data = array(
+        $data = [
             "cid" => $cid,
             "ti"  => $txnId
-        );
+        ];
 
         if (isset($affiliation)) {
             $data["ta"] = $affiliation;
@@ -816,11 +816,11 @@ class Tracker
             throw new \InvalidArgumentException('currency');
         }
 
-        $data = array(
+        $data = [
             "cid" => $cid,
             "ti"  => $txnId,
             "in"  => $name
-        );
+        ];
 
         if (isset($price)) {
             $data["ip"] = $price;
@@ -870,12 +870,12 @@ class Tracker
             throw new \InvalidArgumentException('target');
         }
 
-        $data = array(
+        $data = [
             "cid" => $cid,
             "sa"  => $action,
             "sn"  => $network,
             "st"  => $target
-        );
+        ];
 
         $this->track(self::SOCIAL, self::SOCIAL, $data);
     }
@@ -970,12 +970,12 @@ class Tracker
             throw new \InvalidArgumentException('serverResponseTime');
         }
 
-        $data = array(
+        $data = [
             "cid" => $cid,
             "utc" => $category,
             "utv" => $variable,
             "utt" => $time
-        );
+        ];
 
         if (isset($label)) {
             $data["utl"] = $label;
@@ -1019,14 +1019,14 @@ class Tracker
      */
     public function trackScreenView($cid, $appName, $appVersion, $appId, $appInstallerId, $screenName)
     {
-        $data = array(
+        $data = [
             "cid"  => $cid,
             "an"   => $appName,
             "av"   => $appVersion,
             "aid"  => $appId,
             "aiid" => $appInstallerId,
             "cd"   => $screenName
-        );
+        ];
 
         $this->track(self::SCREEN_VIEW, self::SCREEN_VIEW, $data);
     }
