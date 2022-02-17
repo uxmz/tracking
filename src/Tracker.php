@@ -405,18 +405,6 @@ class Tracker
             return false;
         }
 
-        if (array_key_exists("webTrackingId", $options)) {
-            if (!preg_match(self::TRACKER_ID_REGEXP, $options["webTrackingId"])) {
-                return false;
-            }
-        }
-
-        if (array_key_exists("appTrackingId", $options)) {
-            if (!preg_match(self::TRACKER_ID_REGEXP, $options["appTrackingId"])) {
-                return false;
-            }
-        }
-
         return true;
     }
 
