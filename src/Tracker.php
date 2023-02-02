@@ -130,11 +130,6 @@ class Tracker
     const TRACKING_LOG = "Tracking Log: ";
 
     /**
-     * Tracker ID Regex
-     */
-    const TRACKER_ID_REGEXP = "/^(UA)-\d{4,10}-\d{1,4}$/";
-
-    /**
      * The logger instance.
      *
      * @var LoggerInterface
