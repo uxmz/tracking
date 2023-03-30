@@ -31,7 +31,7 @@ $tracker->trackPageView('user-cid', 'example.com', '/', 'home');
   able to see anything in your dashboard.
 
 ## Docs Generation
-
+### not working any more
 ```bash
 # 1. Run phpdoc command
 vendor/bin/phpdoc -d src -t -docs --template="xml"
