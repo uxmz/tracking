@@ -169,11 +169,13 @@ class Tracker
     protected function track($eventType, $name, $data = [], $props = [], $metrics = [])
     {
         if (!$this->initialized) {
-            throw new \Exception('Class is not initialized');
+            $this->logger->info('Tracking Class is not initialized');
+            return;
         }
 
         if (!$this->canTrack()) {
-            throw new \Exception('Tracking is not enabled');
+            $this->logger->info('Tracking is not enabled');
+            return;
         }
 
         if (!in_array($eventType, self::EVENT_TYPES)) {
@@ -527,10 +529,14 @@ class Tracker
             throw new InvalidArgumentException("Tracker initialization options are invalid!");
         }
 
-        $this->options = array_merge($this->defaults, $options);
-
         $this->httpClient = $httpClient;
         $this->logger = $logger;
+        $this->options = array_merge($this->defaults, $options);
+
+        if (empty($this->options["appTrackingId"]) && empty($this->options["webTrackingId"])){
+            return;
+        }
+
         $this->initialized = true;
     }
 
